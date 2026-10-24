@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Екатерина Пивкина — редактор</title>
+  <meta name="description" content="Редактор Екатерина Пивкина. Создаю тексты под задачи: курсы, сайты, статьи." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f7f7;
+      --ink: #333333;
+      --muted: #999999;
+      --accent: #c05a2e;
+      --hairline: rgba(51, 51, 51, 0.18);
+      --hairline-soft: rgba(51, 51, 51, 0.12);
+      --wide: 1280px;
+      --pad: clamp(1.25rem, 4vw, 2rem);
+      --col-gap: clamp(40px, 6vw, 88px);
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; overflow-x: clip; }
+
+    body {
+      font-family: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.78;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: clip;
+    }
+
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+
+    .wide {
+      max-width: var(--wide);
+      margin: 0 auto;
+      padding-left: var(--pad);
+      padding-right: var(--pad);
+    }
+    /* текстовая сетка: колонка заголовка 25%, колонка текста, отступ 8% внутри .wide;
+       ширина правой колонки одинакова во всех блоках */
+    .text-grid {
+      display: grid;
+      grid-template-columns: 39% 1fr;
+      gap: var(--col-gap);
+      margin-left: 8%;
+      margin-right: 8%;
+    }
+
+    /* ---------- всплывание блоков при скролле ---------- */
+    .reveal {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+      will-change: opacity, transform;
+    }
+    .reveal.is-visible { opacity: 1; transform: translateY(0); }
+    .reveal[data-delay="1"] { transition-delay: 0.12s; }
+    .reveal[data-delay="2"] { transition-delay: 0.24s; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* ---------- печать текста при скролле ----------
+       слова оборачиваются в спаны и проявляются по очереди */
+    .tw-w {
+      opacity: 0;
+      transition: opacity 0.14s ease;
+      will-change: opacity;
+    }
+    .tw-on .tw-w { opacity: 1; }
+    @media (prefers-reduced-motion: reduce) {
+      .tw-w { opacity: 1 !important; transition: none !important; }
+    }
+
+    /* ---------- шапка ---------- */
+    header.site {
+      display: flex; justify-content: flex-end; align-items: center;
+      padding-top: 2.4rem;
+      margin-left: 8%; margin-right: 8%;
+    }
+    header.site nav { display: flex; gap: 26px; align-items: center; }
+    header.site nav a {
+      position: relative;
+      font-weight: 300; font-size: 15px; text-decoration: none;
+    }
+    header.site nav a::after {
+      content: '';
+      position: absolute; left: 0; bottom: -3px;
+      width: 100%; height: 1px; background: var(--ink);
+      transform: scaleX(0); transform-origin: right;
+      transition: transform 0.35s var(--ease);
+    }
+    header.site nav a:hover::after { transform: scaleX(1); transform-origin: left; }
+
+    /* ---------- hero ---------- */
+    .hero { border-bottom: 1px solid #d3d3d3; }
+    /* текст и фото — единый блок: фото тянется ровно на высоту текста */
+    .hero-grid {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: clamp(2rem, 4vw, 3.5rem);
+      margin-left: 8%; margin-right: 8%;
+      padding-top: clamp(4rem, 9vw, 9rem);
+      padding-bottom: clamp(4rem, 8vw, 7rem);
+    }
+    .hero .role {
+      font-size: 14px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 1.7rem;
+    }
+    .hero h1 {
+      font-weight: 600;
+      font-size: clamp(26px, 2.8vw, 36px);
+      line-height: 1.42;
+      max-width: 720px;
+      text-wrap: balance;
+      margin-bottom: 1.5rem;
+    }
+    .hero .note { font-weight: 300; font-size: 17px; color: var(--muted); max-width: 480px; }
+    /* фото без скругления; обёртка растягивается по высоте текста,
+       кадр обрезается по фиксированной ширине */
+    .hero .photo {
+      position: relative;
+      align-self: stretch;
+      flex: 0 0 auto;
+      width: 194px;
+    }
+    .hero .photo img {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    /* ---------- секции ---------- */
+    .section { padding-top: clamp(6rem, 11vw, 10rem); }
+    .section:last-of-type { padding-bottom: clamp(5rem, 10vw, 9rem); }
+    .section-head { margin-bottom: clamp(2.5rem, 4.5vw, 4.3rem); }
+    .section-title {
+      font-weight: 300;
+      font-size: clamp(30px, 3.2vw, 46px);
+      line-height: 1.12;
+      letter-spacing: -0.03em;
+    }
+    .section-body { font-size: 16px; line-height: 1.78; }
+    .section-body p { margin-bottom: 1rem; }
+    .section-body p:last-child { margin-bottom: 0; }
+    .section-body ul { margin: 0 0 1rem 20px; }
+    .section-body li { margin-bottom: 0.5rem; }
+    .section-body li::marker { color: var(--accent); }
+
+    /* ---------- слайдер курсов: свёрстанные слайды ---------- */
+    .gallery { margin-top: clamp(2.5rem, 4.5vw, 4rem); }
+    .gallery-caption {
+      font-weight: 300; color: var(--muted);
+      max-width: 628px; margin-bottom: 1.2rem;
+    }
+    .gallery .viewport {
+      overflow: hidden;
+      border-radius: 24px;
+      background: #faf7f0;
+      transition: background-color 0.8s ease;
+    }
+    .gallery .track { display: flex; align-items: stretch; transition: transform 0.5s var(--ease); }
+    .gallery .slide {
+      flex: 0 0 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: clamp(24px, 5vw, 64px) clamp(20px, 4vw, 56px);
+      cursor: pointer;
+      user-select: none;
+    }
+    .gallery .dots { display: flex; gap: 4px; padding-top: 1.4rem; }
+    .gallery .dots button {
+      width: 30px; height: 2px;
+      border: none; padding: 0;
+      background: var(--ink); opacity: 0.25;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+    .gallery .dots button.active { opacity: 1; }
+    .gallery .hint {
+      font-size: 13px; font-weight: 300; color: var(--muted); padding-top: 0.6rem;
+    }
+
+    /* карточка урока внутри слайда */
+    .lesson {
+      width: 100%; max-width: 680px;
+      background: #fff;
+      border: 1px solid var(--hairline-soft);
+      border-radius: 16px;
+      padding: clamp(1.5rem, 3.5vw, 2.6rem) clamp(1.4rem, 3.5vw, 2.8rem);
+      font-size: 15px; line-height: 1.7;
+      cursor: auto;
+    }
+    .lesson .kicker {
+      font-size: 12px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 1rem;
+    }
+    .lesson h3 { font-weight: 600; font-size: 17px; line-height: 1.45; margin-bottom: 0.8rem; }
+    .lesson p { margin-bottom: 0.8rem; }
+    .lesson p:last-child { margin-bottom: 0; }
+    .lesson ul { margin: 0.2rem 0 0 20px; }
+    .lesson li { margin-bottom: 0.35rem; }
+    .lesson li::marker { color: var(--accent); }
+    .lesson code {
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 0.88em;
+      background: rgba(51, 51, 51, 0.06);
+      border-radius: 4px;
+      padding: 1px 5px;
+      white-space: nowrap;
+    }
+
+    /* тест: все ответы «прожаты», к каждому раскрыта подсказка */
+    .quiz-option {
+      border: 1px solid var(--hairline-soft);
+      border-radius: 12px;
+      padding: 0.85rem 1.1rem;
+      margin-bottom: 0.7rem;
+    }
+    .quiz-option:last-child { margin-bottom: 0; }
+    .quiz-option .answer {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 500; font-size: 15px;
+    }
+    .quiz-option .mark {
+      flex: 0 0 auto;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1.5px solid var(--muted);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; line-height: 1; color: #fff;
+    }
+    .quiz-option .feedback {
+      font-weight: 300; font-size: 14px; line-height: 1.6;
+      color: #666; margin-top: 0.4rem; padding-left: 28px;
+    }
+    .quiz-option.correct { border-color: var(--accent); background: rgba(192, 90, 46, 0.05); }
+    .quiz-option.correct .mark { border-color: var(--accent); background: var(--accent); }
+
+    /* блок «важно» в рамочке */
+    .important {
+      border: 1.5px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.1rem 1.3rem;
+    }
+    .important h4 { font-weight: 600; font-size: 15px; margin-bottom: 0.4rem; }
+    .important p { font-weight: 300; font-size: 14.5px; margin: 0; }
+
+    /* схема передачи данных через FTP */
+    .scheme {
+      display: flex; align-items: stretch; gap: 10px;
+      margin: 1.2rem 0 1.4rem;
+    }
+    .scheme .node {
+      flex: 1;
+      border: 1px solid var(--hairline-soft);
+      border-radius: 12px;
+      background: rgba(51, 51, 51, 0.025);
+      padding: 0.8rem 0.9rem;
+      text-align: center;
+      font-size: 13.5px; font-weight: 500; line-height: 1.45;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+    }
+    .scheme .node small { display: block; font-weight: 300; color: var(--muted); font-size: 12px; }
+    .scheme .arrow {
+      align-self: center;
+      color: var(--accent);
+      font-size: 18px; line-height: 1;
+      flex: 0 0 auto;
+    }
+    /* развилка: от FTP-хранилища стрелки к «Справочникам» и «Мультикубам» */
+    .scheme .fork {
+      display: flex; flex-direction: column;
+      justify-content: space-around;
+      flex: 0 0 auto;
+    }
+    .scheme .node.model { gap: 6px; }
+    .scheme .subs { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+    .scheme .sub {
+      border: 1px solid var(--hairline-soft);
+      background: #fff;
+      border-radius: 8px;
+      padding: 0.35rem 0.5rem;
+      font-size: 12.5px; font-weight: 500;
+    }
+
+    /* ---------- цели: строки с волосяными линиями ---------- */
+    .goal-rows { margin-top: 1.6rem; }
+    .goal-row {
+      display: grid; grid-template-columns: 170px 1fr;
+      gap: 24px; align-items: baseline;
+      padding: 1.3rem 0;
+      border-top: 1px solid var(--hairline-soft);
+    }
+    .goal-row:last-child { border-bottom: 1px solid var(--hairline-soft); }
+    .goal-row .num { font-weight: 300; font-size: clamp(26px, 2.6vw, 34px); letter-spacing: -0.02em; }
+    .goal-row .cap { font-weight: 300; }
+
+    /* ---------- чем полезна: карточки ---------- */
+    .help-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .help-card {
+      border: 1px solid var(--hairline-soft);
+      border-radius: 24px;
+      padding: 1.8rem 2rem;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .help-card h4 { font-weight: 500; font-size: 16px; margin-bottom: 0.5rem; }
+    .help-card p { font-weight: 300; font-size: 15px; line-height: 1.7; }
+
+    /* ---------- статьи ---------- */
+    .article-rows { margin-top: 1rem; }
+    .article-row {
+      display: block;
+      padding: 1.45rem 0;
+      border-top: 1px solid var(--hairline-soft);
+      text-decoration: none;
+      transition: padding-left 0.3s var(--ease);
+    }
+    .article-row:last-child { border-bottom: 1px solid var(--hairline-soft); }
+    .article-row:hover { padding-left: 10px; }
+    .article-row .title { font-size: 16px; }
+    .article-row .title::after { content: ' ↗'; color: var(--accent); font-size: 14px; }
+    .article-row .tags { font-size: 14px; font-weight: 300; color: var(--muted); margin-top: 2px; }
+
+    /* ---------- галерея Саранска ---------- */
+    .cards-grid {
+      /* на всю ширину экрана, вырываясь из контейнера .wide */
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
+      padding: 0 10px;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: clamp(2.5rem, 4.5vw, 4rem);
+    }
+    .cards-grid figure { overflow: hidden; border-radius: 24px; }
+    .cards-grid img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.5s var(--ease);
+    }
+    .cards-grid figure:hover img { transform: scale(1.045); }
+
+    /* ---------- контакт внутри «Обо мне»: две колонки одной высоты ---------- */
+    .contact-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 2.4rem;
+      padding-top: 1.8rem;
+      border-top: 1px solid var(--hairline-soft);
+    }
+    /* две строки по 24px = высота кнопки (18px паддингов + 28,5px строки + рамка) */
+    .contact-row .statement {
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .pill {
+      position: relative; isolation: isolate; overflow: hidden;
+      display: inline-block;
+      padding: 9px 18px;
+      font-size: 16px; font-weight: 400;
+      border: 1px solid var(--ink); border-radius: 8px;
+      text-decoration: none;
+    }
+    .pill .label { position: relative; z-index: 1; color: #fff; transition: color 0.45s var(--ease); }
+    .pill::before {
+      content: '';
+      position: absolute; inset: -1px;
+      background: var(--ink); z-index: 0;
+      transform-origin: top; transform: scaleY(1);
+      transition: transform 0.45s cubic-bezier(0.7, 0, 0.85, 0.2);
+    }
+    .pill:hover::before { transform: scaleY(0); }
+    .pill:hover .label { color: var(--ink); }
+
+    .footer-bar {
+      margin-top: clamp(4rem, 7vw, 6rem);
+      border-top: 1px solid var(--hairline);
+      padding: 1.4rem 0 2rem;
+      display: flex; justify-content: space-between; gap: 16px;
+      font-size: 14px; font-weight: 500;
+    }
+    .footer-bar span { font-weight: 300; color: var(--muted); }
+
+    /* ---------- наверх ---------- */
+    #back-to-top {
+      position: fixed; right: 45px; bottom: 30px;
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 900;
+      border: none; cursor: pointer;
+      opacity: 0; transform: translateY(12px); pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s var(--ease), background 0.3s ease;
+    }
+    #back-to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    #back-to-top:hover { background: #000; }
+    #back-to-top svg { width: 20px; height: 20px; fill: var(--bg); }
+
+    /* ---------- адаптив ---------- */
+    @media (max-width: 900px) {
+      header.site { display: flex; margin-left: 0; margin-right: 0; justify-content: flex-start; }
+      header.site nav { gap: 16px; flex-wrap: wrap; }
+      .text-grid { grid-template-columns: 1fr; margin-left: 0; margin-right: 0; gap: 1.2rem; }
+      .hero-grid { flex-direction: column; align-items: flex-start; margin-left: 0; margin-right: 0; }
+      .hero .photo { order: -1; align-self: flex-start; width: 194px; }
+      .hero .photo img { position: static; height: auto; }
+      .help-grid { grid-template-columns: 1fr; }
+      .cards-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .cards-grid figure, .gallery .viewport, .help-card, .lesson { border-radius: 8px; }
+      .goal-row { grid-template-columns: 110px 1fr; }
+      .scheme { flex-direction: column; }
+      .scheme .arrow { transform: rotate(90deg); }
+      .scheme .fork { flex-direction: row; justify-content: center; gap: 28px; }
+      #back-to-top { right: 18px; bottom: 18px; width: 48px; height: 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <header class="site wide">
+    <nav>
+      <a href="#courses">Курсы</a>
+      <a href="#it">Тексты об айти</a>
+      <a href="#project">Личный проект</a>
+      <a href="#about">Обо мне</a>
+    </nav>
+  </header>
+
+  <div class="wide">
+    <div class="hero-grid">
+      <div class="reveal is-visible">
+        <div class="role">Редактор, Пивкина Екатерина</div>
+        <h1>Создаю тексты под задачи.<br />Редактирую курсы, сайты и статьи.</h1>
+        <p class="note">В портфолио немного кейсов, фокус — на подходе к задачам.</p>
+      </div>
+      <div class="photo reveal is-visible">
+        <img src="images/portrait.png" alt="Фотография Екатерины Пивкиной" width="194" height="243" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section id="courses" class="section">
+    <div class="wide">
+      <div class="text-grid section-head">
+        <h2 class="section-title reveal">Курсы в Optimacros</h2>
+        <div class="section-body reveal" data-delay="1">
+          <p>
+            С марта 2024 года работаю редактором в центре обучения
+            «<a href="https://ompracticum.com/">Оптимакрос Практикум</a>».
+            Отредактировала четыре курса, которые помогают моделерам освоить профессию.
+          </p>
+          <p>Результат, которого мы добились с командой авторов для новых курсов:</p>
+          <ul>
+            <li>Практически не тратим время на сопровождение курсов — возникают единичные вопросы.</li>
+            <li>Не копим бэклог: багов немного, устраняем их за одну-три недели обучения первого
+                потока. Последний курс «Интеграции» выпустили в конце 2025, после выпуска
+                обнаружили меньше пяти багов.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="gallery reveal" data-gallery>
+        <p class="gallery-caption">
+          Тексты — без сложных формулировок. Тесты, акценты, инфографика — чтобы помочь студенту понять.
+        </p>
+        <div class="viewport">
+          <div class="track">
+
+            <!-- слайд 1: приветствие курса -->
+            <div class="slide" data-bg="#faf7f0">
+              <div class="lesson">
+                <div class="kicker">Курс «Интеграции Middle» · Раздел «Межмодельные интеграции»</div>
+                <p>
+                  Привет! Это Практикум. Наши курсы созданы для того, чтобы твоё погружение
+                  в Оптимакрос было комфортным и интересным.
+                </p>
+                <p>
+                  Ты начинаешь курс «Интеграции Middle», и в этом уроке мы расскажем,
+                  как будет проходить твоё обучение:
+                </p>
+                <ul>
+                  <li>как устроен учебник;</li>
+                  <li>где будешь отрабатывать практические навыки;</li>
+                  <li>к кому обращаться с вопросами.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- слайд 2: тест с раскрытыми подсказками -->
+            <div class="slide" data-bg="#f2f1ec">
+              <div class="lesson">
+                <div class="kicker">Курс «Интеграции Middle» · Раздел «Библиотека скриптов и ядро Export/Import»</div>
+                <h3>В каком месте ошибка <code>Error: Setting ENV&nbsp;→ ACTIONS&nbsp;[0]&nbsp;→ LIST_NAME is not defined</code>?</h3>
+
+                <div class="quiz-option correct">
+                  <div class="answer"><span class="mark">✓</span>В настройках значения ENV</div>
+                  <div class="feedback">Ошибку стоит искать в настройках константы ENV, спускаясь по стрелочкам, придёшь к точному месту.</div>
+                </div>
+                <div class="quiz-option correct">
+                  <div class="answer"><span class="mark">✓</span>В параметре ACTIONS</div>
+                  <div class="feedback">Проблема связана с ACTIONS[0] — что-то не так с первым элементом в списке действий. Позже в уроке мы поговорим, почему в скобках указан ноль, а искать ошибку надо в первом элементе.</div>
+                </div>
+                <div class="quiz-option correct">
+                  <div class="answer"><span class="mark">✓</span>В параметре LIST_NAME</div>
+                  <div class="feedback">В яблочко. Не указано имя справочника.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- слайд 3: блок «важно» в рамочке -->
+            <div class="slide" data-bg="#fbeeec">
+              <div class="lesson">
+                <div class="kicker">Курс «Интеграции Middle» · Раздел «Библиотека скриптов и ядро Export/Import»</div>
+                <div class="important">
+                  <h4>Как использовать значение по умолчанию при разработке скриптов</h4>
+                  <p>
+                    Если значение по умолчанию совпадает с нужным тебе в скрипте, параметр можно
+                    не указывать. Например, строку <code>VIEW_NAME: null</code> можно не включать
+                    в код. Но если ты сделаешь это, ошибки не будет.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- слайд 4: схема + текст про FTP -->
+            <div class="slide" data-bg="#eef2f1">
+              <div class="lesson">
+                <div class="kicker">Курс «Интеграции Middle» · Раздел «FTP»</div>
+                <div class="scheme">
+                  <div class="node">Система заказчика</div>
+                  <div class="arrow">→</div>
+                  <div class="node">FTP-хранилище</div>
+                  <div class="fork"><span class="arrow">↗</span><span class="arrow">↘</span></div>
+                  <div class="node model">
+                    Модель
+                    <div class="subs">
+                      <div class="sub">Справочники</div>
+                      <div class="sub">Мультикубы</div>
+                    </div>
+                  </div>
+                </div>
+                <p>
+                  Через FTP можно передавать данные в любом формате, но для интеграций
+                  с Оптимакрос подходят XLS, CSV, TXT. Выбор формата зависит от того,
+                  в каком виде хранятся данные у заказчика:
+                </p>
+                <ul>
+                  <li>табличные данные загружают в модель в файлах XLS или CSV;</li>
+                  <li>структурированные текстовые данные, например JSON-код, передают в файлах TXT.</li>
+                </ul>
+              </div>
+            </div>
+
+          </div>
+        </div>
+        <div class="dots"></div>
+        <div class="hint">Листайте кликом по слайду, точками или стрелками клавиатуры.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wide">
+      <div class="text-grid">
+        <h2 class="section-title reveal">Работа<br />с фактурой</h2>
+        <div class="section-body reveal" data-delay="1">
+          <p>Редактирую курс, который перешёл от другой команды. На проекте поставила перед собой цели:</p>
+          <div class="goal-rows">
+            <div class="goal-row"><div class="num">−50%</div><div class="cap">нагрузка на сопровождение</div></div>
+            <div class="goal-row"><div class="num">≤ 5</div><div class="cap">некритичных багов на проде</div></div>
+            <div class="goal-row"><div class="num">3,9 → 4,8</div><div class="cap">оценка пользы курса</div></div>
+            <div class="goal-row"><div class="num">3,9 → 4,9</div><div class="cap">оценка понятности</div></div>
+          </div>
+          <p style="margin-top: 1.6rem;">
+            Два примера, как превращаю текст из фактуры в учебный материал:
+            в <a href="https://docs.google.com/document/d/1JEUmqnDGLBBl8eecwWr1b0QCg6Y7EK-BvZcAAjjUaeY/edit?usp=sharing">гугл-доке</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wide">
+      <div class="text-grid">
+        <h2 class="section-title reveal">Чем я ещё полезна<br />своей команде</h2>
+        <div class="help-grid">
+          <div class="help-card reveal">
+            <h4>Делюсь опытом</h4>
+            <p>Даю обратную связь авторам о проблемных местах, провожу обучающие встречи, ввожу людей в процессы.</p>
+          </div>
+          <div class="help-card reveal" data-delay="1">
+            <h4>Веду Телеграм</h4>
+            <p>Пишу для канала «<a href="https://t.me/optimacros_practicum">Оптимакрос Практикум</a>». Работаем в формате витрины — рассказываем об обновлениях и подходах. С канала приходят продажи. Коллеги используют посты в своей работе.</p>
+          </div>
+          <div class="help-card reveal">
+            <h4>Помогаю с любыми текстами</h4>
+            <p>Типовые сообщения для студентов, тексты вакансий, КП и всякое. Верстаю материалы в Тильде и Фигме.</p>
+          </div>
+          <div class="help-card reveal" data-delay="1">
+            <h4>Сопровождаю студентов</h4>
+            <p>Разобралась в моделировании и помогаю ученикам.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="it" class="section">
+    <div class="wide">
+      <div class="text-grid">
+        <h2 class="section-title reveal">Тексты об айти<br />в SimbirSoft</h2>
+        <div class="section-body reveal" data-delay="1">
+          <p>
+            Пришла в SimbirSoft в августе 2021 года исполнителем, который знал, что в айти-команде
+            существуют тестировщики и программисты. К концу понимала роль каждого на проекте
+            и их птичий язык. Стала редактором контента от frontend-направления: искала темы,
+            контролировала сроки, редактировала. Работала с маркетинговыми материалами:
+            от реклам до страниц услуг или лид-магнитов.
+          </p>
+          <div class="article-rows">
+            <a class="article-row" href="https://habr.com/ru/companies/simbirsoft/articles/769312/">
+              <div class="title">9 алгоритмов сортировки и поиска для JS, о которых вас спросят на собеседовании</div>
+              <div class="tags">#для программистов&ensp;#Хабр</div>
+            </a>
+            <a class="article-row" href="https://habr.com/ru/companies/simbirsoft/articles/765024/">
+              <div class="title">Кулинарный гид по Vue.js: всё о props</div>
+              <div class="tags">#для программистов&ensp;#Хабр</div>
+            </a>
+            <a class="article-row" href="https://www.simbirsoft.com/blog/pomogaem-razvivat-prilozhenie-dlya-zaryadki-avtomobiley-interesnye-keysy-v-razrabotke/">
+              <div class="title">Приложение для зарядки автомобилей: интересные кейсы в разработке</div>
+              <div class="tags">#для клиентов&ensp;#блог компании</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="project" class="section">
+    <div class="wide">
+      <div class="text-grid section-head">
+        <h2 class="section-title reveal">Личный проект<br />«В Саранске и вокруг»</h2>
+        <div class="section-body reveal" data-delay="1">
+          <p>
+            В 2025 году завела <a href="https://t.me/saransk_vokrug">канал о родном городе</a>.
+            Хотела изменить, что знакомые из раз в раз заявляют: «В Саранске ничего
+            не происходит». Афиша в «Яндексе» или на других сайтах не решала проблему.
+            Потому что там кнопки надо было нажимать, а ещё части мероприятий не было
+            или были все мероприятия на свете. Неотсортированные. Я сделала свою афишу недели.
+          </p>
+          <p>
+            Каждую неделю я отбирала мероприятия 12+, которые нравятся мне. И верстала
+            в картинки по три события — с календарём недели. Со временем малознакомые люди
+            стали благодарить меня, потому что у них поменялось восприятие: каждую неделю
+            что-то показывают, только успевай ходить. Я горжусь этим маленьким проектом.
+          </p>
+        </div>
+      </div>
+
+      <div class="cards-grid">
+        <figure class="reveal"><img src="images/saransk-1.png" alt="Фотография из канала «В Саранске и вокруг»" loading="lazy" /></figure>
+        <figure class="reveal" data-delay="1"><img src="images/saransk-2.png" alt="Карточка афиши недели" loading="lazy" /></figure>
+        <figure class="reveal" data-delay="2"><img src="images/saransk-3.png" alt="Карточка афиши недели" loading="lazy" /></figure>
+        <figure class="reveal"><img src="images/saransk-4.png" alt="Карточка афиши недели" loading="lazy" /></figure>
+        <figure class="reveal" data-delay="1"><img src="images/saransk-6.png" alt="Карточка афиши недели" loading="lazy" /></figure>
+        <figure class="reveal" data-delay="2"><img src="images/saransk-7.png" alt="Карточка афиши недели" loading="lazy" /></figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="section">
+    <div class="wide">
+      <div class="text-grid">
+        <h2 class="section-title reveal">Обо мне</h2>
+        <div class="section-body reveal" data-delay="1">
+          <p>Мои ценности: гуманизм, движение и развитие, семья, польза.</p>
+          <p>
+            Люблю работать с проектами не однодневками. Например, как сейчас — сотни людей
+            проходят курсы «Оптимакрос Практикум» и получают профессию. Вау!
+          </p>
+          <p>
+            К миру отношусь ответственно. Улыбаюсь продавцам, сдаю вещи на благотворительность
+            и всякое. Недавно завела ютуб-канал, в котором коротко и с юмором показываю,
+            как легко выкидывать мусор в мусорку во время прогулок:
+            «<a href="https://www.youtube.com/@chisto_privychka">Чисто привычка</a>».
+            Потом придумаю что-то ещё.
+          </p>
+          <div class="contact-row">
+            <p class="statement">Обсудить задачи<br />приглашаю в Телеграм.</p>
+            <a class="pill" href="https://t.me/pivkina_katya"><span class="label">Написать: @pivkina_katya</span></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <div>Екатерина Пивкина</div>
+        <span>Редактор</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<button id="back-to-top" type="button" aria-label="Наверх">
+  <svg viewBox="0 0 24 24"><path d="M12 4l-8 8 1.41 1.41L11 7.83V20h2V7.83l5.59 5.58L20 12z"/></svg>
+</button>
+
+<script>
+  // ---------- типограф ----------
+  // однобуквенные и двухбуквенные слова не должны висеть в конце строки:
+  // пробел после них заменяем на неразрывный
+  (function typograf() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        n.parentElement && /^(SCRIPT|STYLE|CODE)$/.test(n.parentElement.tagName)
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT,
+    });
+    const nodes = [];
+    while (walker.nextNode()) { nodes.push(walker.currentNode); }
+    nodes.forEach((node) => {
+      const parts = node.textContent.split(/(\s+)/);
+      for (let i = 0; i < parts.length - 1; i += 1) {
+        if (/(^|[«„("'—-])[А-ЯЁа-яёA-Za-z]{1,2}$/.test(parts[i]) && /\s/.test(parts[i + 1])) {
+          parts[i + 1] = ' ';
+        }
+      }
+      node.textContent = parts.join('');
+    });
+  })();
+
+  // ---------- всплывание блоков при скролле ----------
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.reveal:not(.is-visible)').forEach((el) => io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+  }
+
+  // ---------- печать текста при скролле ----------
+  // Оборачиваем каждое слово в спан (разметка внутри — ссылки, <br> — сохраняется),
+  // при появлении блока на экране слова проявляются по очереди.
+  const TW_SELECTOR = [
+    '.hero h1', '.hero .note',
+    '.section-title', '.section-body > p', '.section-body > ul > li',
+    '.gallery-caption', '.goal-row .cap',
+    '.help-card h4', '.help-card p',
+    '.article-row .title',
+    '.contact-row .statement',
+  ].join(', ');
+
+  function wrapWords(node) {
+    [...node.childNodes].forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if (!child.textContent.trim()) { return; }
+        const frag = document.createDocumentFragment();
+        child.textContent.split(/(\s+)/).forEach((part) => {
+          if (!part) { return; }
+          if (/^\s+$/.test(part)) {
+            frag.appendChild(document.createTextNode(part));
+          } else {
+            const w = document.createElement('span');
+            w.className = 'tw-w';
+            w.textContent = part;
+            frag.appendChild(w);
+          }
+        });
+        child.replaceWith(frag);
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        wrapWords(child);
+      }
+    });
+  }
+
+  if (!reduceMotion && 'IntersectionObserver' in window) {
+    const twEls = document.querySelectorAll(TW_SELECTOR);
+    twEls.forEach((el) => wrapWords(el));
+    const twIo = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) { return; }
+        const words = e.target.querySelectorAll('.tw-w');
+        words.forEach((w, i) => { w.style.transitionDelay = (i * 22) + 'ms'; });
+        e.target.classList.add('tw-on');
+        twIo.unobserve(e.target);
+      });
+    }, { threshold: 0.25, rootMargin: '0px 0px -4% 0px' });
+    twEls.forEach((el) => twIo.observe(el));
+  }
+
+  // ---------- слайдер курсов ----------
+  document.querySelectorAll('[data-gallery]').forEach((gallery) => {
+    const viewport = gallery.querySelector('.viewport');
+    const track = gallery.querySelector('.track');
+    const slides = gallery.querySelectorAll('.slide');
+    const dotsBox = gallery.querySelector('.dots');
+    let index = 0;
+
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', 'Слайд ' + (i + 1));
+      dot.addEventListener('click', () => go(i));
+      dotsBox.appendChild(dot);
+    });
+
+    function go(i) {
+      index = (i + slides.length) % slides.length;
+      track.style.transform = 'translateX(-' + index * 100 + '%)';
+      viewport.style.backgroundColor = slides[index].dataset.bg || '';
+      dotsBox.querySelectorAll('button').forEach((d, n) => {
+        d.classList.toggle('active', n === index);
+      });
+    }
+
+    // клик по свободному полю слайда листает вперёд;
+    // клик по карточке урока — нет, чтобы можно было выделять текст
+    slides.forEach((s) => s.addEventListener('click', (e) => {
+      if (e.target.closest('.lesson')) { return; }
+      go(index + 1);
+    }));
+
+    gallery.tabIndex = 0;
+    gallery.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { go(index - 1); }
+      if (e.key === 'ArrowRight') { go(index + 1); }
+    });
+
+    let startX = null;
+    viewport.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    viewport.addEventListener('touchend', (e) => {
+      if (startX === null) { return; }
+      const dx = e.changedTouches[0].clientX - startX;
+      if (Math.abs(dx) > 40) { go(dx > 0 ? index - 1 : index + 1); }
+      startX = null;
+    });
+
+    go(0);
+  });
+
+  // ---------- кнопка «наверх» ----------
+  const toTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    toTop.classList.toggle('visible', window.scrollY > 600);
+  }, { passive: true });
+  toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }));
+</script>
+
+</body>
+</html>
